@@ -1,13 +1,4 @@
-"""`Prediction`: the output side of the run operation.
-
-Plain numpy on the CPU, same conventions as `Scene`, so ground truth and
-predictions can be compared with no reshaping. Model-agnostic on purpose:
-DA3 or DUSt3R runners would later fill the same fields.
-
-Note on frames and scale: VGGT predicts in the frame of view 0 (its extrinsics
-are ~identity) and with its own normalized scale. Comparing to GT therefore
-always needs an alignment step first (the score layer).
-"""
+"""Dataclass for model-agnostic prediction."""
 
 from __future__ import annotations
 

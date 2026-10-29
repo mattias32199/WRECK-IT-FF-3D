@@ -1,13 +1,7 @@
-"""`VGGTRunner`: load VGGT and run it. Scene in, Prediction out.
+"""VGGTRunner loads and runs VGGT. Scene in, Prediction out.
 
-Design rule for later layers: the runner never changes. Inspection and
-interventions are context managers that wrap `runner.model` for the duration
-of one call:
-
-    with TokenRecorder(runner.model, layers=[...]) as rec:     # analysis/hooks.py
-        pred = runner.run(scene)
-    with CrossViewOff(runner.model, blocks=range(8, 16)):      # analysis/knockouts.py
-        pred_ko = runner.run(scene)
+    Input: scene
+    Output: prediction
 """
 
 from __future__ import annotations

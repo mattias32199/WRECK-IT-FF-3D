@@ -2,12 +2,17 @@
 
 ## Pipeline
 
+### 1. Dataset
+Views/objects for prediction and experiments.
+- [DTU](https://ieeexplore.ieee.org/document/6909453)
+
+
 ## File Tree
 ```
 ├── README.md
 └── wreck_it_ff_3d
     ├── __init__.py
-    ├── analysis
+    ├── analysis // stubs, placeholders
     │   ├── __init__.py
     │   ├── hooks.py
     │   └── knockouts.py
