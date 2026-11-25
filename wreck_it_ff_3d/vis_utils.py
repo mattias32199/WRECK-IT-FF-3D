@@ -7,7 +7,7 @@ from typing import Optional
 
 import numpy as np
 
-from lib.models.prediction import Prediction
+from wreck_it_ff_3d.models.prediction import Prediction
 
 
 def save_panels(pred: Prediction, path: str | Path, max_views: int = 6) -> Path:

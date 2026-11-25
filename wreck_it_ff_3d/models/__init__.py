@@ -6,6 +6,6 @@ directly as scripts: that would put this folder on sys.path and make
 `vggt` resolve to models/vggt.py.
 """
 
-from lib.models.prediction import Prediction
+from wreck_it_ff_3d.models.prediction import Prediction
 
 __all__ = ["Prediction"]

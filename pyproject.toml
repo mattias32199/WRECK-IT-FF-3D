@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wreck-it-ff-3d"
+version = "0.1.0"
+description = "Running and analysing feed-forward 3D reconstruction models (VGGT), and exporting scenes to Isaac Sim."
+requires-python = ">=3.10"
+# torch/torchvision: install the build matching your GPU first (RTX 50-series needs CUDA 12.8+ wheels).
+# Upstream VGGT is not on PyPI; install it separately (see README).
+dependencies = [
+    "numpy",
+    "pillow",
+    "matplotlib",
+    "torch",
+    "torchvision",
+    "huggingface_hub",
+    "safetensors",
+    "einops",
+    "opencv-python-headless",
+    "open3d<0.20",  # 0.20.0's ScalableTSDFVolume returns empty meshes
+    "usd-core",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["wreck_it_ff_3d*"]

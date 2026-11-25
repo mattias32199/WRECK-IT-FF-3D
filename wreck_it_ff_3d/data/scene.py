@@ -22,7 +22,7 @@ from typing import Optional, Sequence
 import numpy as np
 import torch
 
-from lib.data.preprocess import ImageTransform, load_image, preprocess_image
+from wreck_it_ff_3d.data.preprocess import ImageTransform, load_image, preprocess_image
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"}
 

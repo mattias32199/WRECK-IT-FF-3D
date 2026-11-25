@@ -16,8 +16,8 @@ import torch
 from vggt.models.vggt import VGGT
 from vggt.utils.pose_enc import pose_encoding_to_extri_intri
 
-from lib.models.prediction import Prediction
-from lib.data.scene import Scene
+from wreck_it_ff_3d.models.prediction import Prediction
+from wreck_it_ff_3d.data.scene import Scene
 
 DEFAULT_MODEL = "facebook/VGGT-1B"
 

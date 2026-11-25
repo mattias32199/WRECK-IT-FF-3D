@@ -1,0 +1,8 @@
+out/
+__pycache__/
+*.egg-info/
+.DS_Store
+*.mp4
+*.MP4
+*.mov
+*.MOV

@@ -19,8 +19,8 @@ First milestone ("done when"): DTU numbers land near those in the VGGT paper.
 
 from __future__ import annotations
 
-from lib.models.prediction import Prediction
-from lib.data.scene import Scene
+from wreck_it_ff_3d.models.prediction import Prediction
+from wreck_it_ff_3d.data.scene import Scene
 
 
 def evaluate(pred: Prediction, scene: Scene) -> dict:

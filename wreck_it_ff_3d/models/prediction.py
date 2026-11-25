@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from lib.geometry import unproject_depth
+from wreck_it_ff_3d.geometry_utils import unproject_depth
 
 
 @dataclass
