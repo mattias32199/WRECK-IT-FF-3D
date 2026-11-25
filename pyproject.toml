@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "confprobe"
+version = "0.1.0"
+description = "Experiment 1 (confidence probe) for VGGT on controlled synthetic scenes"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.1", "numpy", "scipy", "pandas", "pyarrow", "pyyaml", "matplotlib"]
+
+[project.optional-dependencies]
+vggt = ["vggt @ git+https://github.com/facebookresearch/vggt.git"]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "slow: needs real VGGT weights and a GPU (run with: pytest -m slow)",
+]
+addopts = "-m 'not slow'"

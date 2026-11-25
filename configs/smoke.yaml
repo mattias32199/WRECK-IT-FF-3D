@@ -1,0 +1,11 @@
+# Tiny end-to-end run to check the pipeline on a GPU box (~1 min).
+name: smoke
+n_scenes: 2
+seed_offset: 1000
+camera: {n_views: 4}
+conditions:
+  n_masked: 1
+  view_subsets: [2]
+  occlusion: {regions_per_condition: 3, target_supports: [0, 1, 2], min_visible_views: 3}
+eval: {pixel_stride: 4}
+output: {data_dir: data/smoke, results_dir: results/smoke}

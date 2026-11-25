@@ -1,0 +1,50 @@
+# Experiment 1: does VGGT's confidence reflect geometric support?
+name: exp1_confidence_probe
+n_scenes: 50
+seed_offset: 0
+
+scene:
+  n_objects: [6, 12]
+  object_size: [0.15, 0.55]
+  sphere_prob: 0.35
+
+camera:
+  n_views: 8
+  height: 392          # multiples of 14 -> no resizing, GT is pixel-aligned with VGGT output
+  width: 518
+  fov_x_deg: 65.0
+  arc_deg: 120.0       # smaller arc = more view overlap
+  shuffle: false
+
+conditions:
+  include_clean: true  # unmasked baseline (paired comparison for every masked region)
+  n_masked: 2          # masked conditions per scene, each with fresh regions
+  view_subsets: [2, 4] # unmasked runs with fewer views (support via view selection)
+  occlusion:
+    regions_per_condition: 4
+    target_supports: [0, 1, 2, 3]
+    region_radius: [0.15, 0.35]
+    min_visible_views: 4
+    mask_shape: bbox    # bbox | silhouette (silhouette leaks object outlines)
+    mask_dilation: 3
+    fill: gray          # gray | black | mean | noise
+
+render:
+  ssaa: 2
+  device: cpu          # set to cuda to speed up generation
+
+model:
+  weights: facebook/VGGT-1B
+  checkpoint: null     # path to model.pt for offline machines
+  device: null
+
+eval:
+  pixel_stride: 2
+  align_on: supported
+  err_threshold: 0.05
+
+output:
+  data_dir: data/synthetic
+  results_dir: results/exp1
+  save_raw_predictions: false
+  overwrite: false
