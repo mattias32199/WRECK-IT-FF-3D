@@ -111,3 +111,33 @@ def test_raw_prediction_saving(small_cfg):
 def test_condition_preview(tmp_path, small_sample, small_conditions):
     p = save_condition_preview(small_sample, small_conditions[1], tmp_path / "prev.png")
     assert p.exists() and p.stat().st_size > 1000
+
+
+def test_pixel_sample_mask_is_deterministic_and_paired():
+    from confprobe.pipeline import pixel_sample_mask
+
+    yy, xx = np.meshgrid(np.arange(0, 392, 2), np.arange(0, 518, 2), indexing="ij")
+    df = pd.DataFrame({"view": 3, "y": yy.ravel(), "x": xx.ravel()})
+    m = pixel_sample_mask(df, 0.25)
+    assert abs(m.mean() - 0.25) < 0.01
+    # same pixels regardless of row order / which condition the table came from
+    shuffled = df.sample(frac=1.0, random_state=0)
+    assert np.array_equal(pixel_sample_mask(shuffled, 0.25), m[shuffled.index.to_numpy()])
+    assert pixel_sample_mask(df, 1.0).all()
+    # no obvious spatial structure: both halves of the image are sampled evenly
+    assert abs(m[df.x.to_numpy() < 259].mean() - m[df.x.to_numpy() >= 259].mean()) < 0.02
+
+
+def test_aggregate_with_subsample_keeps_pairs(small_cfg):
+    small_cfg.n_scenes = 1
+    run_experiment(small_cfg, _oracle_runner(small_cfg))
+    small_cfg.eval.aggregate_frac = 1.0
+    full = aggregate(small_cfg)
+    small_cfg.eval.aggregate_frac = 0.3
+    sub = aggregate(small_cfg)
+    assert sub["n_pixel_rows"] < 0.4 * full["n_pixel_rows"]
+    assert sub["pixel_frac"] == 0.3
+    # paired deltas still exist and summary metrics stay close to the full-data values
+    assert "region_deltas_by_target" in sub
+    a, b = full["all"]["depth/depth_conf"], sub["all"]["depth/depth_conf"]
+    assert abs(a["spearman_conf_err"] - b["spearman_conf_err"]) < 0.1

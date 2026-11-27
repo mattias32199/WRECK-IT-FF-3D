@@ -28,6 +28,7 @@ class EvalConfig:
     err_threshold: float = 0.05  # abs-rel threshold for "high error"
     err_quantile: float = 0.8  # alternative: top (1-q) errors within a condition are "high"
     max_spearman_samples: int = 2_000_000
+    aggregate_frac: float = 0.25  # pixel subsample used when aggregating all results (RAM)
 
 
 # --------------------------------------------------------------------------- #
@@ -153,7 +154,7 @@ def evaluate_condition(
             "scene_id": cond.scene_id,
             "condition": cond.name,
             "kind": cond.kind,
-            "n_views": S,
+            "n_views": np.int8(S),
             "view": vv.ravel().astype(np.int16),
             "y": yy.ravel().astype(np.int16),
             "x": xx.ravel().astype(np.int16),
@@ -174,6 +175,8 @@ def evaluate_condition(
             "used_for_align": align_mask[sl].ravel(),
         }
     )
+    for col in ("scene_id", "condition", "kind"):
+        df[col] = df[col].astype("category")
     info = {
         "scene_id": cond.scene_id,
         "condition": cond.name,
@@ -311,8 +314,13 @@ def paired_region_deltas(df: pd.DataFrame, baseline: str = "clean") -> pd.DataFr
     error in both runs and the deltas. Requires the same pixel stride for both.
     """
     keys = ["scene_id", "view", "y", "x"]
-    base = df[df.condition == baseline][keys + ["depth_conf_pct", "abs_rel", "depth_conf"]]
-    reg = df[(df.region_id >= 0) & (df.condition != baseline) & (df.kind == "masked")]
+    cond_str = df.condition.astype(str)
+    base = df.loc[cond_str == baseline, keys + ["depth_conf_pct", "abs_rel", "depth_conf"]].copy()
+    reg = df.loc[(df.region_id >= 0) & (cond_str != baseline) & (df.kind.astype(str) == "masked")].copy()
+    for t in (base, reg):  # plain string keys: avoids categorical-merge pitfalls
+        for col in ("scene_id", "condition", "kind"):
+            if col in t:
+                t[col] = t[col].astype(str)
     if len(reg) == 0 or len(base) == 0:
         return pd.DataFrame()
     m = reg.merge(base, on=keys, suffixes=("", "_base"))

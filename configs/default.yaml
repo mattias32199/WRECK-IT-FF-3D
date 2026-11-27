@@ -40,6 +40,7 @@ model:
 
 eval:
   pixel_stride: 2
+  aggregate_frac: 0.25   # pixel subsample for summary/figures (keeps RAM low)
   align_on: supported
   err_threshold: 0.05
 

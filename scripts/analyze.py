@@ -21,8 +21,10 @@ def main():
     ap.add_argument("--config", default=None)
     args = ap.parse_args()
     cfg = load_config(args.config)
-    aggregate(cfg)
-    pix, _ = load_tables(cfg.output.results_dir)
+    pix, poses = load_tables(cfg.output.results_dir, frac=cfg.eval.aggregate_frac)  # load once
+    print(f"loaded {len(pix):,} pixel rows (aggregate_frac={cfg.eval.aggregate_frac})")
+    aggregate(cfg, pix, poses)
+    print(Path(cfg.output.results_dir) / "summary.json")
     paths = make_report_figures(pix, paired_region_deltas(pix), Path(cfg.output.results_dir) / "figures")
     for p in paths:
         print(p)

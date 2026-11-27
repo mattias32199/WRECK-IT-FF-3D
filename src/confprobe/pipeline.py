@@ -98,12 +98,56 @@ def run_experiment(cfg: ExperimentConfig, runner: VGGTRunner) -> Path:
 # --------------------------------------------------------------------------- #
 # Aggregation
 # --------------------------------------------------------------------------- #
-def load_tables(results_dir: str | Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+CATEGORICAL_COLS = ("scene_id", "condition", "kind")
+
+
+def pixel_sample_mask(df: pd.DataFrame, frac: float) -> np.ndarray:
+    """Deterministic subsample keyed on (view, y, x) only, so the *same* pixels are kept
+    in every condition and scene (paired clean-vs-masked comparisons stay intact)."""
+    if frac >= 1.0:
+        return np.ones(len(df), dtype=bool)
+    h = (
+        df["view"].to_numpy(np.uint64) * np.uint64(0x9E3779B97F4A7C15)
+        ^ df["y"].to_numpy(np.uint64) * np.uint64(0xBF58476D1CE4E5B9)
+        ^ df["x"].to_numpy(np.uint64) * np.uint64(0x94D049BB133111EB)
+    )
+    h ^= h >> np.uint64(31)
+    h *= np.uint64(0xD6E8FEB86659FD93)
+    h ^= h >> np.uint64(32)
+    return (h % np.uint64(1_000_000)) < np.uint64(int(frac * 1_000_000))
+
+
+def _read_with_shared_categories(files: list[Path], columns=None, frac: float = 1.0) -> pd.DataFrame:
+    """Concatenate parquet tables keeping string columns categorical (with one shared
+    category set), optionally subsampling each file first, so 50+ scenes of per-pixel
+    rows fit in Colab-sized RAM."""
+    frames = []
+    for f in files:
+        df = pd.read_parquet(f, columns=columns)
+        if frac < 1.0:
+            df = df[pixel_sample_mask(df, frac)].reset_index(drop=True)
+        frames.append(df)
+    for col in CATEGORICAL_COLS:
+        if all(col in f for f in frames):
+            cats = sorted(set().union(*(set(f[col].astype(str).unique()) for f in frames)))
+            for f in frames:
+                f[col] = pd.Categorical(f[col].astype(str), categories=cats)
+    return pd.concat(frames, ignore_index=True)
+
+
+def load_tables(
+    results_dir: str | Path, columns: list[str] | None = None, frac: float = 1.0
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Load all per-pixel and pose tables.
+
+    `columns` loads a subset of columns and `frac` a deterministic subset of pixels
+    (see :func:`pixel_sample_mask`); both save RAM.
+    """
     out = Path(results_dir)
     pix_files = sorted((out / "pixels").glob("*.parquet"))
     if not pix_files:
         raise FileNotFoundError(f"no results in {out / 'pixels'}")
-    pix = pd.concat([pd.read_parquet(f) for f in pix_files], ignore_index=True)
+    pix = _read_with_shared_categories(pix_files, columns, frac)
     pose_files = sorted((out / "poses").glob("*.parquet"))
     poses = pd.concat([pd.read_parquet(f) for f in pose_files], ignore_index=True) if pose_files else pd.DataFrame()
     return pix, poses
@@ -123,18 +167,25 @@ def _jsonable(x):
     return x
 
 
-def aggregate(cfg: ExperimentConfig) -> dict:
+def aggregate(cfg: ExperimentConfig, pix: pd.DataFrame | None = None, poses: pd.DataFrame | None = None) -> dict:
+    """Write summary.json (+ region_deltas.csv). Loads a `cfg.eval.aggregate_frac` pixel
+    subsample unless tables are passed in."""
     out = Path(cfg.output.results_dir)
-    pix, poses = load_tables(out)
+    if pix is None:
+        pix, poses = load_tables(out, frac=cfg.eval.aggregate_frac)
+        log.info("aggregating %d pixel rows (frac=%.2f)", len(pix), cfg.eval.aggregate_frac)
+    poses = pd.DataFrame() if poses is None else poses
     summary = {
         "n_scenes": int(pix.scene_id.nunique()),
+        "pixel_frac": cfg.eval.aggregate_frac,
+        "n_pixel_rows": int(len(pix)),
         "all": summarize(pix, cfg.eval),
-        "by_kind": {k: summarize(g, cfg.eval) for k, g in pix.groupby("kind")},
+        "by_kind": {k: summarize(g, cfg.eval) for k, g in pix.groupby("kind", observed=True)},
     }
     if len(poses):
         summary["poses"] = (
             poses[poses.view > 0]
-            .groupby(poses.condition.str.split("_").str[0])
+            .groupby(poses.condition.astype(str).str.split("_").str[0])
             .agg(rot_err_deg=("rot_err_deg", "mean"), trans_ang_err_deg=("trans_ang_err_deg", "mean"))
             .to_dict(orient="index")
         )
